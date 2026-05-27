@@ -2,7 +2,6 @@ import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 
 // GET /api/init-db - Initialize the database tables
-// This endpoint creates the orders table if it doesn't exist
 export async function GET() {
   try {
     await db.execute(`
@@ -32,6 +31,22 @@ export async function GET() {
 
     await db.execute(`
       CREATE INDEX IF NOT EXISTS idx_orders_status ON orders(status)
+    `)
+
+    await db.execute(`
+      CREATE TABLE IF NOT EXISTS reports (
+        id TEXT PRIMARY KEY,
+        title TEXT NOT NULL,
+        type TEXT NOT NULL,
+        data TEXT,
+        date_range TEXT,
+        created_at TEXT NOT NULL DEFAULT (datetime('now')),
+        updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+      )
+    `)
+
+    await db.execute(`
+      CREATE INDEX IF NOT EXISTS idx_reports_created_at ON reports(created_at DESC)
     `)
 
     return NextResponse.json({ success: true, message: 'Database initialized successfully' })

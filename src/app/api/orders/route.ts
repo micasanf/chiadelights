@@ -154,6 +154,7 @@ export async function GET() {
       size: row.size as string,
       quantity: row.quantity as number,
       paymentMethod: row.payment_method as string,
+      paymentProof: row.payment_proof as string | null,
       specialRequests: row.special_requests as string | null,
       totalAmount: row.total_amount as number,
       status: row.status as string,
