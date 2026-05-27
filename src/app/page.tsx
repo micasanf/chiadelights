@@ -48,7 +48,6 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { Separator } from '@/components/ui/separator'
-import AdminDashboard from '@/components/admin/AdminDashboard'
 
 // ─── Data ───────────────────────────────────────────────
 
@@ -139,9 +138,6 @@ const STEPS = [
 // ─── Component ──────────────────────────────────────────
 
 export default function Home() {
-  // View mode: storefront or admin
-  const [viewMode, setViewMode] = useState<'store' | 'admin'>('store')
-
   // Order form state
   const [customerName, setCustomerName] = useState('')
   const [email, setEmail] = useState('')
@@ -290,33 +286,18 @@ export default function Home() {
             <span className="font-bold text-lg tracking-tight">ChiaDelights</span>
           </div>
           <div className="flex items-center gap-2">
-            {viewMode === 'admin' ? (
-              <Button onClick={() => setViewMode('store')} size="sm" variant="outline">
-                <Leaf className="w-4 h-4 mr-1" /> Storefront
+            <Button onClick={scrollToOrder} size="sm" className="bg-emerald-600 hover:bg-emerald-700">
+              Order Now
+            </Button>
+            <a href="/admin">
+              <Button size="sm" variant="outline">
+                Admin
               </Button>
-            ) : (
-              <>
-                <Button onClick={scrollToOrder} size="sm" className="bg-emerald-600 hover:bg-emerald-700">
-                  Order Now
-                </Button>
-                <Button onClick={() => setViewMode('admin')} size="sm" variant="outline">
-                  Admin
-                </Button>
-              </>
-            )}
+            </a>
           </div>
         </div>
       </nav>
 
-      {viewMode === 'admin' ? (
-        <main className="flex-1 max-w-6xl mx-auto px-4 py-8">
-          <div className="mb-6">
-            <h1 className="text-2xl font-bold">Admin Dashboard</h1>
-            <p className="text-muted-foreground">Manage orders, view proofs, and generate reports</p>
-          </div>
-          <AdminDashboard />
-        </main>
-      ) : (
       <main className="flex-1">
         {/* ─── Hero ─── */}
         <section className="relative overflow-hidden">
@@ -985,7 +966,6 @@ export default function Home() {
           </div>
         </section>
       </main>
-      )}
 
       {/* ─── Footer ─── */}
       <footer className="bg-emerald-900 text-white mt-auto">
