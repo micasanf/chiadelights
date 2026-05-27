@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import {
   ShoppingBag,
-  DollarSign,
+  PhilippinePeso,
   Clock,
   CheckCircle2,
   XCircle,
@@ -367,7 +367,7 @@ export default function AdminDashboard() {
               <CardContent className="p-6">
                 <div className="flex items-center gap-4">
                   <div className="w-12 h-12 rounded-xl bg-green-100 flex items-center justify-center">
-                    <DollarSign className="w-6 h-6 text-green-600" />
+                    <PhilippinePeso className="w-6 h-6 text-green-600" />
                   </div>
                   <div>
                     <p className="text-sm text-muted-foreground">Total Revenue</p>
@@ -552,6 +552,7 @@ export default function AdminDashboard() {
                     <TableHead className="hidden sm:table-cell">Size</TableHead>
                     <TableHead>Qty</TableHead>
                     <TableHead>Total</TableHead>
+                    <TableHead className="hidden md:table-cell">Proof</TableHead>
                     <TableHead className="hidden lg:table-cell">Payment</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Actions</TableHead>
@@ -560,7 +561,7 @@ export default function AdminDashboard() {
                 <TableBody>
                   {paginatedOrders.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={10} className="text-center py-8 text-muted-foreground">
+                      <TableCell colSpan={11} className="text-center py-8 text-muted-foreground">
                         No orders found
                       </TableCell>
                     </TableRow>
@@ -576,6 +577,27 @@ export default function AdminDashboard() {
                         <TableCell className="hidden sm:table-cell capitalize">{o.size}</TableCell>
                         <TableCell>{o.quantity}</TableCell>
                         <TableCell className="font-bold text-emerald-600">₱{o.totalAmount}</TableCell>
+                        <TableCell className="hidden md:table-cell">
+                          {o.paymentMethod !== 'cod' && o.paymentProof ? (
+                            <button
+                              onClick={() => setViewProof(o)}
+                              className="relative group"
+                            >
+                              <img
+                                src={o.paymentProof}
+                                alt="Proof"
+                                className="w-10 h-10 rounded-md object-cover border hover:ring-2 hover:ring-emerald-500 transition-all"
+                              />
+                              <div className="absolute inset-0 bg-black/40 rounded-md opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                                <Eye className="w-4 h-4 text-white" />
+                              </div>
+                            </button>
+                          ) : o.paymentMethod === 'cod' ? (
+                            <span className="text-xs text-muted-foreground">COD</span>
+                          ) : (
+                            <span className="text-xs text-muted-foreground">None</span>
+                          )}
+                        </TableCell>
                         <TableCell className="hidden lg:table-cell">
                           {PAYMENT_LABELS[o.paymentMethod]?.icon}{' '}
                           {PAYMENT_LABELS[o.paymentMethod]?.label || o.paymentMethod}
@@ -856,6 +878,22 @@ export default function AdminDashboard() {
                   className="w-full h-auto max-h-[60vh] object-contain"
                 />
               </div>
+              <div className="flex justify-end">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="gap-1.5"
+                  onClick={() => {
+                    if (!viewProof?.paymentProof) return
+                    const a = document.createElement('a')
+                    a.href = viewProof.paymentProof
+                    a.download = `payment-proof-${viewProof.id.slice(0, 12)}.png`
+                    a.click()
+                  }}
+                >
+                  <Download className="w-4 h-4" /> Download
+                </Button>
+              </div>
             </div>
           )}
         </DialogContent>
@@ -924,6 +962,22 @@ export default function AdminDashboard() {
                     {PAYMENT_LABELS[viewDetails.paymentMethod]?.label}
                   </span>
                 </div>
+                {viewDetails.paymentMethod !== 'cod' && viewDetails.paymentProof && (
+                  <>
+                    <Separator />
+                    <div>
+                      <span className="text-muted-foreground text-sm">Payment Proof</span>
+                      <div className="mt-2 border rounded-lg overflow-hidden bg-black/5 cursor-pointer hover:ring-2 hover:ring-emerald-500 transition-all" onClick={() => { setViewDetails(null); setTimeout(() => setViewProof(viewDetails), 200); }}>
+                        <img
+                          src={viewDetails.paymentProof}
+                          alt="Payment proof"
+                          className="w-full h-auto max-h-48 object-contain"
+                        />
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-1">Click image to view full size</p>
+                    </div>
+                  </>
+                )}
                 {viewDetails.specialRequests && (
                   <>
                     <Separator />
