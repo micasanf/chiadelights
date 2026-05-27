@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
+import { ensureTables } from '@/lib/ensure-db'
 
 // POST /api/orders - Create a new order
 export async function POST(request: NextRequest) {
   try {
+    await ensureTables()
     const body = await request.json()
 
     const {
@@ -141,6 +143,7 @@ export async function POST(request: NextRequest) {
 // GET /api/orders - Get all orders
 export async function GET() {
   try {
+    await ensureTables()
     const result = await db.execute('SELECT * FROM orders ORDER BY created_at DESC')
 
     const orders = result.rows.map((row) => ({

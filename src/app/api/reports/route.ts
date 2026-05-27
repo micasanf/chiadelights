@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
+import { ensureTables } from '@/lib/ensure-db'
 
 // POST /api/reports - Upload a report/sheet
 export async function POST(request: NextRequest) {
   try {
+    await ensureTables()
     const body = await request.json()
     const { title, type, data, dateRange } = body
 
@@ -33,6 +35,7 @@ export async function POST(request: NextRequest) {
 // GET /api/reports - Get all reports
 export async function GET() {
   try {
+    await ensureTables()
     const result = await db.execute('SELECT * FROM reports ORDER BY created_at DESC')
 
     const reports = result.rows.map((row) => ({

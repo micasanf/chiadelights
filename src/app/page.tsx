@@ -138,6 +138,11 @@ const STEPS = [
 // ─── Component ──────────────────────────────────────────
 
 export default function Home() {
+  // Initialize database on mount
+  useEffect(() => {
+    fetch('/api/init-db').catch(() => {})
+  }, [])
+
   // Order form state
   const [customerName, setCustomerName] = useState('')
   const [email, setEmail] = useState('')
@@ -247,7 +252,7 @@ export default function Home() {
 
       if (!res.ok) {
         const data = await res.json()
-        throw new Error(data.error || 'Failed to place order')
+        throw new Error(data.details ? data.details.join(', ') : data.error || 'Failed to place order')
       }
 
       const data = await res.json()

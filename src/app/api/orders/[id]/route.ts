@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
+import { ensureTables } from '@/lib/ensure-db'
 
 // PUT /api/orders/[id] - Update an order (status, details)
 export async function PUT(
@@ -7,6 +8,7 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    await ensureTables()
     const { id } = await params
     const body = await request.json()
 
@@ -115,6 +117,7 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    await ensureTables()
     const { id } = await params
 
     const existing = await db.execute({ sql: 'SELECT id FROM orders WHERE id = ?', args: [id] })
@@ -137,6 +140,7 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    await ensureTables()
     const { id } = await params
 
     const result = await db.execute({ sql: 'SELECT * FROM orders WHERE id = ?', args: [id] })

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
+import { ensureTables } from '@/lib/ensure-db'
 
 // DELETE /api/reports/[id] - Delete a report
 export async function DELETE(
@@ -7,6 +8,7 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    await ensureTables()
     const { id } = await params
 
     const existing = await db.execute({ sql: 'SELECT id FROM reports WHERE id = ?', args: [id] })
