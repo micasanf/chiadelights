@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { sql } from '@/lib/db'
+import { db } from '@/lib/db'
 
 // POST /api/orders - Create a new order
 export async function POST(request: NextRequest) {
@@ -78,52 +78,57 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Create the order using SQL
-    const result = await sql`
-      INSERT INTO orders (
-        customer_name, email, phone, address, delivery_method,
+    // Generate a unique ID
+    const id = `ord_${Date.now()}_${Math.random().toString(36).substring(2, 10)}`
+    const now = new Date().toISOString()
+
+    // Create the order using Turso
+    await db.execute({
+      sql: `INSERT INTO orders (
+        id, customer_name, email, phone, address, delivery_method,
         flavor, size, quantity, payment_method, payment_proof,
-        special_requests, total_amount, status
-      ) VALUES (
-        ${customerName.trim()},
-        ${email?.trim() || null},
-        ${phone.trim()},
-        ${address?.trim() || null},
-        ${deliveryMethod},
-        ${flavor.trim()},
-        ${size},
-        ${quantity},
-        ${paymentMethod},
-        ${paymentProof?.trim() || null},
-        ${specialRequests?.trim() || null},
-        ${totalAmount},
-        'pending'
-      )
-      RETURNING id, customer_name, email, phone, address, delivery_method, flavor, size, quantity, payment_method, special_requests, total_amount, status, created_at, updated_at
-    `
+        special_requests, total_amount, status, created_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      args: [
+        id,
+        customerName.trim(),
+        email?.trim() || null,
+        phone.trim(),
+        address?.trim() || null,
+        deliveryMethod,
+        flavor.trim(),
+        size,
+        quantity,
+        paymentMethod,
+        paymentProof?.trim() || null,
+        specialRequests?.trim() || null,
+        totalAmount,
+        'pending',
+        now,
+        now,
+      ],
+    })
 
-    const order = result.rows[0]
-
-    // Transform snake_case to camelCase for frontend compatibility
-    const formattedOrder = {
-      id: order.id,
-      customerName: order.customer_name,
-      email: order.email,
-      phone: order.phone,
-      address: order.address,
-      deliveryMethod: order.delivery_method,
-      flavor: order.flavor,
-      size: order.size,
-      quantity: order.quantity,
-      paymentMethod: order.payment_method,
-      specialRequests: order.special_requests,
-      totalAmount: order.total_amount,
-      status: order.status,
-      createdAt: order.created_at,
-      updatedAt: order.updated_at,
+    // Return the created order
+    const order = {
+      id,
+      customerName: customerName.trim(),
+      email: email?.trim() || null,
+      phone: phone.trim(),
+      address: address?.trim() || null,
+      deliveryMethod,
+      flavor: flavor.trim(),
+      size,
+      quantity,
+      paymentMethod,
+      specialRequests: specialRequests?.trim() || null,
+      totalAmount,
+      status: 'pending',
+      createdAt: now,
+      updatedAt: now,
     }
 
-    return NextResponse.json(formattedOrder, { status: 201 })
+    return NextResponse.json(order, { status: 201 })
   } catch (error) {
     console.error('Error creating order:', error)
     return NextResponse.json(
@@ -136,30 +141,24 @@ export async function POST(request: NextRequest) {
 // GET /api/orders - Get all orders
 export async function GET() {
   try {
-    const result = await sql`
-      SELECT id, customer_name, email, phone, address, delivery_method,
-        flavor, size, quantity, payment_method, special_requests,
-        total_amount, status, created_at, updated_at
-      FROM orders
-      ORDER BY created_at DESC
-    `
+    const result = await db.execute('SELECT * FROM orders ORDER BY created_at DESC')
 
-    const orders = result.rows.map((order) => ({
-      id: order.id,
-      customerName: order.customer_name,
-      email: order.email,
-      phone: order.phone,
-      address: order.address,
-      deliveryMethod: order.delivery_method,
-      flavor: order.flavor,
-      size: order.size,
-      quantity: order.quantity,
-      paymentMethod: order.payment_method,
-      specialRequests: order.special_requests,
-      totalAmount: order.total_amount,
-      status: order.status,
-      createdAt: order.created_at,
-      updatedAt: order.updated_at,
+    const orders = result.rows.map((row) => ({
+      id: row.id as string,
+      customerName: row.customer_name as string,
+      email: row.email as string | null,
+      phone: row.phone as string,
+      address: row.address as string | null,
+      deliveryMethod: row.delivery_method as string,
+      flavor: row.flavor as string,
+      size: row.size as string,
+      quantity: row.quantity as number,
+      paymentMethod: row.payment_method as string,
+      specialRequests: row.special_requests as string | null,
+      totalAmount: row.total_amount as number,
+      status: row.status as string,
+      createdAt: row.created_at as string,
+      updatedAt: row.updated_at as string,
     }))
 
     return NextResponse.json(orders)

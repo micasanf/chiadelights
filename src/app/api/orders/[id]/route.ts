@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { sql } from '@/lib/db'
+import { db } from '@/lib/db'
 
 // GET /api/orders/[id] - Get a single order by ID
 export async function GET(
@@ -9,13 +9,10 @@ export async function GET(
   try {
     const { id } = await params
 
-    const result = await sql`
-      SELECT id, customer_name, email, phone, address, delivery_method,
-        flavor, size, quantity, payment_method, special_requests,
-        total_amount, status, created_at, updated_at
-      FROM orders
-      WHERE id = ${id}
-    `
+    const result = await db.execute({
+      sql: 'SELECT * FROM orders WHERE id = ?',
+      args: [id],
+    })
 
     if (result.rows.length === 0) {
       return NextResponse.json(
@@ -24,26 +21,26 @@ export async function GET(
       )
     }
 
-    const order = result.rows[0]
-    const formattedOrder = {
-      id: order.id,
-      customerName: order.customer_name,
-      email: order.email,
-      phone: order.phone,
-      address: order.address,
-      deliveryMethod: order.delivery_method,
-      flavor: order.flavor,
-      size: order.size,
-      quantity: order.quantity,
-      paymentMethod: order.payment_method,
-      specialRequests: order.special_requests,
-      totalAmount: order.total_amount,
-      status: order.status,
-      createdAt: order.created_at,
-      updatedAt: order.updated_at,
+    const row = result.rows[0]
+    const order = {
+      id: row.id as string,
+      customerName: row.customer_name as string,
+      email: row.email as string | null,
+      phone: row.phone as string,
+      address: row.address as string | null,
+      deliveryMethod: row.delivery_method as string,
+      flavor: row.flavor as string,
+      size: row.size as string,
+      quantity: row.quantity as number,
+      paymentMethod: row.payment_method as string,
+      specialRequests: row.special_requests as string | null,
+      totalAmount: row.total_amount as number,
+      status: row.status as string,
+      createdAt: row.created_at as string,
+      updatedAt: row.updated_at as string,
     }
 
-    return NextResponse.json(formattedOrder)
+    return NextResponse.json(order)
   } catch (error) {
     console.error('Error fetching order:', error)
     return NextResponse.json(

@@ -3,7 +3,7 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "sqlite"
   url      = env("DATABASE_URL")
 }
 
@@ -13,12 +13,12 @@ model Order {
   email           String?
   phone           String
   address         String?
-  deliveryMethod  String   // "delivery" or "pickup"
-  flavor          String   // selected flavor
-  size            String   // "regular" or "large"
+  deliveryMethod  String
+  flavor          String
+  size            String
   quantity        Int      @default(1)
-  paymentMethod   String   // "gcash", "maya", "bank_transfer", "cod"
-  paymentProof    String?  // base64 data URL of screenshot
+  paymentMethod   String
+  paymentProof    String?
   specialRequests String?
   totalAmount     Float
   status          String   @default("pending")

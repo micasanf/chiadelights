@@ -1,6 +1,24 @@
-import { sql } from '@vercel/postgres'
+import { createClient, type Client } from '@libsql/client'
 
-// Vercel Postgres SQL client
-// When deployed on Vercel with a Postgres store, this automatically uses the connection string.
-// Set DATABASE_URL in your Vercel project settings (or it's auto-set when you create a Vercel Postgres store).
-export { sql }
+const globalForDb = globalThis as unknown as {
+  turso: Client | undefined
+}
+
+function createDbClient() {
+  const url = process.env.TURSO_DATABASE_URL || process.env.DATABASE_URL
+
+  if (!url) {
+    throw new Error('TURSO_DATABASE_URL or DATABASE_URL environment variable is not set')
+  }
+
+  const authToken = process.env.TURSO_AUTH_TOKEN
+
+  return createClient({
+    url,
+    authToken: authToken || undefined,
+  })
+}
+
+export const db = globalForDb.turso ?? createDbClient()
+
+if (process.env.NODE_ENV !== 'production') globalForDb.turso = db
