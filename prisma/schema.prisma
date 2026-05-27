@@ -1,0 +1,27 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Order {
+  id              String   @id @default(cuid())
+  customerName    String
+  email           String?
+  phone           String
+  address         String?
+  deliveryMethod  String   // "delivery" or "pickup"
+  flavors         String   // JSON string of selected flavors with quantities
+  size            String   // "regular" or "large"
+  quantity        Int      @default(1)
+  paymentMethod   String   // "gcash", "maya", "bank_transfer", "cod"
+  paymentProof    String?  // path to uploaded screenshot
+  specialRequests String?
+  totalAmount     Float
+  status          String   @default("pending") // "pending", "confirmed", "preparing", "ready", "delivered", "cancelled"
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
