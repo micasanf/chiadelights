@@ -231,6 +231,9 @@ export default function Home() {
 
     setIsSubmitting(true)
     try {
+      // Initialize database before submitting
+      await fetch('/api/init-db').catch(() => {})
+
       const res = await fetch('/api/orders', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -251,8 +254,14 @@ export default function Home() {
       })
 
       if (!res.ok) {
-        const data = await res.json()
-        throw new Error(data.details ? data.details.join(', ') : data.error || 'Failed to place order')
+        let errorMsg = 'Failed to place order'
+        try {
+          const data = await res.json()
+          errorMsg = data.details ? data.details.join(', ') : data.error || errorMsg
+        } catch {
+          // Response wasn't JSON
+        }
+        throw new Error(errorMsg)
       }
 
       const data = await res.json()
@@ -273,7 +282,7 @@ export default function Home() {
       setSpecialRequests('')
       setErrors({})
     } catch (err) {
-      setErrors({ submit: err instanceof Error ? err.message : 'Something went wrong' })
+      setErrors({ submit: err instanceof Error ? err.message : 'Something went wrong. Please try again.' })
     } finally {
       setIsSubmitting(false)
     }

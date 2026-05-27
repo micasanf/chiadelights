@@ -24,6 +24,7 @@ import {
   ChevronRight,
   BarChart3,
   ClipboardList,
+  AlertCircle,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -127,6 +128,7 @@ export default function AdminDashboard() {
   const [orders, setOrders] = useState<Order[]>([])
   const [reports, setReports] = useState<Report[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState('all')
   const [page, setPage] = useState(1)
@@ -146,6 +148,15 @@ export default function AdminDashboard() {
   const [reportFile, setReportFile] = useState<File | null>(null)
   const [reportFilePreview, setReportFilePreview] = useState<string | null>(null)
 
+  // Initialize database then fetch data
+  const initDb = useCallback(async () => {
+    try {
+      await fetch('/api/init-db')
+    } catch {
+      // Ignore init-db errors, tables might already exist
+    }
+  }, [])
+
   // Fetch data
   const fetchOrders = useCallback(async () => {
     try {
@@ -153,9 +164,13 @@ export default function AdminDashboard() {
       if (res.ok) {
         const data = await res.json()
         setOrders(data)
+        setError(null)
+      } else {
+        setError('Failed to fetch orders. Please try refreshing.')
       }
     } catch (e) {
       console.error('Fetch orders error:', e)
+      setError('Network error. Please check your connection and try again.')
     }
   }, [])
 
@@ -174,12 +189,21 @@ export default function AdminDashboard() {
   useEffect(() => {
     const init = async () => {
       setLoading(true)
+      await initDb()
       await fetchOrders()
       await fetchReports()
       setLoading(false)
     }
     init()
-  }, [fetchOrders, fetchReports])
+  }, [initDb, fetchOrders, fetchReports])
+
+  // Auto-refresh orders every 15 seconds
+  useEffect(() => {
+    const interval = setInterval(() => {
+      fetchOrders()
+    }, 15000)
+    return () => clearInterval(interval)
+  }, [fetchOrders])
 
   // Computed values
   const filteredOrders = orders.filter((o) => {
@@ -324,13 +348,28 @@ export default function AdminDashboard() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-96">
-        <Loader2 className="w-8 h-8 animate-spin text-emerald-600" />
+        <div className="text-center">
+          <Loader2 className="w-8 h-8 animate-spin text-emerald-600 mx-auto mb-3" />
+          <p className="text-sm text-muted-foreground">Loading dashboard...</p>
+        </div>
       </div>
     )
   }
 
   return (
     <div className="space-y-6">
+      {/* Error banner */}
+      {error && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-center justify-between">
+          <div className="flex items-center gap-2 text-sm text-red-600">
+            <AlertCircle className="w-4 h-4 shrink-0" />
+            {error}
+          </div>
+          <Button variant="outline" size="sm" onClick={() => { fetchOrders(); fetchReports() }}>
+            <RefreshCw className="w-4 h-4 mr-1" /> Retry
+          </Button>
+        </div>
+      )}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="grid w-full grid-cols-4 lg:w-auto lg:grid-cols-4">
           <TabsTrigger value="dashboard" className="gap-1.5">
