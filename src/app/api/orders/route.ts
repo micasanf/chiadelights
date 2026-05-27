@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { db } from '@/lib/db'
+import { sql } from '@/lib/db'
 
 // POST /api/orders - Create a new order
 export async function POST(request: NextRequest) {
@@ -56,17 +56,14 @@ export async function POST(request: NextRequest) {
       errors.push('totalAmount must be a non-negative number')
     }
 
-    // If delivery, address is required
     if (deliveryMethod === 'delivery' && (!address || typeof address !== 'string' || address.trim() === '')) {
       errors.push('address is required when deliveryMethod is "delivery"')
     }
 
-    // If payment method is not COD, payment proof is required
     if (paymentMethod !== 'cod' && (!paymentProof || typeof paymentProof !== 'string' || paymentProof.trim() === '')) {
       errors.push('paymentProof is required when paymentMethod is not "cod"')
     }
 
-    // Validate email format if provided
     if (email && typeof email === 'string' && email.trim() !== '') {
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
       if (!emailRegex.test(email)) {
@@ -81,25 +78,52 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Create the order
-    const order = await db.order.create({
-      data: {
-        customerName: customerName.trim(),
-        email: email?.trim() || null,
-        phone: phone.trim(),
-        address: address?.trim() || null,
-        deliveryMethod,
-        flavor: flavor.trim(),
-        size,
-        quantity,
-        paymentMethod,
-        paymentProof: paymentProof?.trim() || null,
-        specialRequests: specialRequests?.trim() || null,
-        totalAmount,
-      },
-    })
+    // Create the order using SQL
+    const result = await sql`
+      INSERT INTO orders (
+        customer_name, email, phone, address, delivery_method,
+        flavor, size, quantity, payment_method, payment_proof,
+        special_requests, total_amount, status
+      ) VALUES (
+        ${customerName.trim()},
+        ${email?.trim() || null},
+        ${phone.trim()},
+        ${address?.trim() || null},
+        ${deliveryMethod},
+        ${flavor.trim()},
+        ${size},
+        ${quantity},
+        ${paymentMethod},
+        ${paymentProof?.trim() || null},
+        ${specialRequests?.trim() || null},
+        ${totalAmount},
+        'pending'
+      )
+      RETURNING id, customer_name, email, phone, address, delivery_method, flavor, size, quantity, payment_method, special_requests, total_amount, status, created_at, updated_at
+    `
 
-    return NextResponse.json(order, { status: 201 })
+    const order = result.rows[0]
+
+    // Transform snake_case to camelCase for frontend compatibility
+    const formattedOrder = {
+      id: order.id,
+      customerName: order.customer_name,
+      email: order.email,
+      phone: order.phone,
+      address: order.address,
+      deliveryMethod: order.delivery_method,
+      flavor: order.flavor,
+      size: order.size,
+      quantity: order.quantity,
+      paymentMethod: order.payment_method,
+      specialRequests: order.special_requests,
+      totalAmount: order.total_amount,
+      status: order.status,
+      createdAt: order.created_at,
+      updatedAt: order.updated_at,
+    }
+
+    return NextResponse.json(formattedOrder, { status: 201 })
   } catch (error) {
     console.error('Error creating order:', error)
     return NextResponse.json(
@@ -109,14 +133,34 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// GET /api/orders - Get all orders (admin view)
+// GET /api/orders - Get all orders
 export async function GET() {
   try {
-    const orders = await db.order.findMany({
-      orderBy: {
-        createdAt: 'desc',
-      },
-    })
+    const result = await sql`
+      SELECT id, customer_name, email, phone, address, delivery_method,
+        flavor, size, quantity, payment_method, special_requests,
+        total_amount, status, created_at, updated_at
+      FROM orders
+      ORDER BY created_at DESC
+    `
+
+    const orders = result.rows.map((order) => ({
+      id: order.id,
+      customerName: order.customer_name,
+      email: order.email,
+      phone: order.phone,
+      address: order.address,
+      deliveryMethod: order.delivery_method,
+      flavor: order.flavor,
+      size: order.size,
+      quantity: order.quantity,
+      paymentMethod: order.payment_method,
+      specialRequests: order.special_requests,
+      totalAmount: order.total_amount,
+      status: order.status,
+      createdAt: order.created_at,
+      updatedAt: order.updated_at,
+    }))
 
     return NextResponse.json(orders)
   } catch (error) {

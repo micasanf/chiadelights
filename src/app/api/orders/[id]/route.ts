@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { db } from '@/lib/db'
+import { sql } from '@/lib/db'
 
 // GET /api/orders/[id] - Get a single order by ID
 export async function GET(
@@ -9,18 +9,41 @@ export async function GET(
   try {
     const { id } = await params
 
-    const order = await db.order.findUnique({
-      where: { id },
-    })
+    const result = await sql`
+      SELECT id, customer_name, email, phone, address, delivery_method,
+        flavor, size, quantity, payment_method, special_requests,
+        total_amount, status, created_at, updated_at
+      FROM orders
+      WHERE id = ${id}
+    `
 
-    if (!order) {
+    if (result.rows.length === 0) {
       return NextResponse.json(
         { error: 'Order not found' },
         { status: 404 }
       )
     }
 
-    return NextResponse.json(order)
+    const order = result.rows[0]
+    const formattedOrder = {
+      id: order.id,
+      customerName: order.customer_name,
+      email: order.email,
+      phone: order.phone,
+      address: order.address,
+      deliveryMethod: order.delivery_method,
+      flavor: order.flavor,
+      size: order.size,
+      quantity: order.quantity,
+      paymentMethod: order.payment_method,
+      specialRequests: order.special_requests,
+      totalAmount: order.total_amount,
+      status: order.status,
+      createdAt: order.created_at,
+      updatedAt: order.updated_at,
+    }
+
+    return NextResponse.json(formattedOrder)
   } catch (error) {
     console.error('Error fetching order:', error)
     return NextResponse.json(

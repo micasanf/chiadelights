@@ -1,24 +1,6 @@
-import { PrismaClient } from '@prisma/client'
-import { PrismaPg } from '@prisma/adapter-pg'
-import pg from 'pg'
+import { sql } from '@vercel/postgres'
 
-const globalForPrisma = globalThis as unknown as {
-  prisma: PrismaClient | undefined
-}
-
-function createPrismaClient() {
-  const connectionString = process.env.DATABASE_URL
-
-  if (!connectionString) {
-    throw new Error('DATABASE_URL environment variable is not set')
-  }
-
-  // Use Prisma PostgreSQL adapter for serverless compatibility (Vercel)
-  const pool = new pg.Pool({ connectionString })
-  const adapter = new PrismaPg(pool)
-  return new PrismaClient({ adapter })
-}
-
-export const db = globalForPrisma.prisma ?? createPrismaClient()
-
-if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = db
+// Vercel Postgres SQL client
+// When deployed on Vercel with a Postgres store, this automatically uses the connection string.
+// Set DATABASE_URL in your Vercel project settings (or it's auto-set when you create a Vercel Postgres store).
+export { sql }
